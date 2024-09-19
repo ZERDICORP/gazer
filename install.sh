@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GITHUB_URL="https://github.com/username/repository/raw/master/gaze"
+GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/v1/gaze"
 FILE_NAME="gaze"
 DEST_DIR="/usr/local/bin"
 DEST_PATH="$DEST_DIR/$FILE_NAME"
