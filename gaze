@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Проверка наличия первого аргумента и выполнение команды watch
+if [ "$1" == "log" ]; then
+    if ! command -v watch &> /dev/null; then
+        echo "Ошибка: Команда 'watch' не найдена. Установите её и повторите попытку."
+        exit 1
+    fi
+    watch -n 0.1 .gazer.log
+    exit 0
+elif [ -n "$1" ]; then
+    echo "Ошибка: Неизвестный аргумент '$1'. Используйте без аргументов или 'log'."
+    exit 1
+fi
+
+# Проверка наличия файла .gazer.run
+if [ ! -f ".gazer.run" ]; then
+    echo "Ошибка: Файл .gazer.run не найден."
+    exit 1
+fi
+
+# Проверка наличия файла .gazer.pid и завершение старого процесса
+if [ -f ".gazer.pid" ]; then
+    OLD_PID=$(cat .gazer.pid)
+    if ps -p $OLD_PID > /dev/null 2>&1; then
+        echo "Завершаем старый процесс с PID: $OLD_PID"
+        kill $OLD_PID
+    else
+        echo "Процесс с PID $OLD_PID уже не существует."
+    fi
+fi
+
+# Запуск нового процесса и запись логов
+echo "Запускаем новый процесс..."
+./.gazer.run > .gazer.log 2>&1 &
+NEW_PID=$!
+echo $NEW_PID > .gazer.pid
+
+echo "Процесс запущен с PID: $NEW_PID"
+echo "Весь лог будет записан в файл .gazer.log"
