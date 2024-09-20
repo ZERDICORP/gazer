@@ -11,11 +11,11 @@
 ```
 ## How to use?
 
-#### 1. Download [installer](https://github.com/ZERDICORP/gazer/releases/latest/download/install.sh) and run it on your machine.
+#### 1. Download [installer](https://raw.githubusercontent.com/ZERDICORP/gazer/master/install.sh) and run it on your machine.
 
 Or you can simply run this command:
 ```bash
-bash <(curl -Ls https://github.com/ZERDICORP/gazer/releases/latest/download/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/ZERDICORP/gazer/master/install.sh)
 ```
 
 #### 2. Create a `run.gazer` file (_there you need to write bash code to start your process like:_ `python server.py`)
