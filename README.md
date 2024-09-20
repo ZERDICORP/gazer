@@ -18,9 +18,8 @@ Or you can simply run this command:
 bash <(curl -Ls https://github.com/ZERDICORP/gazer/releases/latest/download/install.sh)
 ```
 
-#### 3. Create a `run.gazer` file (_there you need to write bash code to start your process like:_ `python server.py`)
-#### 4. Run command `gazer` in the **same directory** where you created the `run.gazer` file.
-
-A menu will appear, and you’ll figure out the rest.
-
-Enjoy using it! :smirk:
+#### 2. Create a `run.gazer` file (_there you need to write bash code to start your process like:_ `python server.py`)
+#### 3. Run command `gazer` in the **same directory** where you created the `run.gazer` file.
+#### 4. A menu will appear, and you’ll figure out the rest.
+ㅤ  
+### Enjoy using it! :smirk:
