@@ -16,7 +16,7 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-GITHUB_URL="https://github.com/ZERDICORP/gazer/releases/latest/download/gazer"
+GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/master/gazer"
 DEST_PATH="/usr/local/bin/gazer"
 
 wget "$GITHUB_URL" -O "$DEST_PATH" -q
