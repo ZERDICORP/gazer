@@ -62,7 +62,6 @@ done
 
 if [ "$cmd" == "3" ]; then
   watch -n 0.1 cat .gazer.log
-  echo "Success"
   exit 0
 fi
 
