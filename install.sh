@@ -17,11 +17,9 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 GITHUB_URL="https://github.com/ZERDICORP/gazer/releases/latest/download/gazer"
-FILE_NAME="gazer"
-DEST_PATH="/usr/local/bin/$FILE_NAME"
+DEST_PATH="/usr/local/bin/gazer"
 
-wget "$GITHUB_URL" -o "$FILE_NAME" -q
-mv "$FILE_NAME" "$DEST_PATH"
+wget "$GITHUB_URL" -O "$DEST_PATH" -q
 chmod +x "$DEST_PATH"
 
 echo "Success!"
