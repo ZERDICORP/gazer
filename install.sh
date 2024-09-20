@@ -16,13 +16,11 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/v1/gaze"
-FILE_NAME="gazer"
-DEST_DIR="/usr/local/bin"
-DEST_PATH="$DEST_DIR/$FILE_NAME"
+GITHUB_URL="https://github.com/ZERDICORP/gazer/releases/latest/download/gazer"
+DEST_PATH="/usr/local/bin/gazer"
 
 wget "$GITHUB_URL" -o "$DEST_PATH" -q
 chmod +x "$DEST_PATH"
 
 echo "Success!"
-echo "Executable can be found in $DEST_PATH"
+echo "Executable can be found in '$DEST_PATH'"
