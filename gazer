@@ -1,6 +1,9 @@
 #!/bin/bash
 
-cat <<"EOF"
+show_ascii_art() {
+  clear
+  sleep 0.1
+  cat <<"EOF"
    _____                      __  __
   / ____|                    |  \/  |
  | |  __  __ _ _______ _ __  | \  / | ___ _ __  _   _
@@ -9,38 +12,72 @@ cat <<"EOF"
   \_____|\__,_/___\___|_|    |_|  |_|\___|_| |_|\__,_|
 
 EOF
+}
 
-if [ -f ".gazer.bid" ]; then
-  build_id=$(cat .gazer.bid)
-  echo "                                      > $build_id <"
-fi
+show_ascii_art
 
-sleep 0.5
+sleep 0.3
 
-if [ ! -f "run.gazer" ]; then
-  echo "The file 'run.gazer' does not exist!"
+configs=(*.gazer)
+
+if [ ! -e "${configs[0]}" ]; then
+  echo "No '*.gazer' configuration files found!"
   exit 1
 fi
 
-started=false
+if [ ${#configs[@]} -gt 1 ]; then
+  echo "Found multiple configuration files:"
+  for i in "${!configs[@]}"; do
+    echo "$((i + 1))) ${configs[$i]}"
+  done
 
-echo "Choose an action:"
-if [ -f ".gazer.pid" ]; then
+  while true; do
+    read -rp "Choose a configuration file (1-${#configs[@]}): " choice
+    if [[ -z "$choice" ]]; then
+      exit 0
+    fi
+    if [[ "$choice" =~ ^[1-${#configs[@]}]$ ]]; then
+      selected_config="${configs[$((choice - 1))]}"
+      break
+    else
+      echo "Please choose a valid option."
+    fi
+  done
+
+  show_ascii_art
+else
+  selected_config="${configs[0]}"
+fi
+
+base_name="${selected_config%.gazer}"
+log_file=".$base_name.gazer.log"
+pid_file=".$base_name.gazer.pid"
+bid_file=".$base_name.gazer.bid"
+
+if [ -f "$bid_file" ]; then
+  build_id=$(cat "$bid_file")
+  echo "                                      > $build_id <"
+fi
+
+sleep 0.3
+
+echo "Actions for '$selected_config':"
+
+if [ -f "$pid_file" ]; then
   started=true
-
   echo "1) Restart"
   echo "2) Stop"
   echo "3) Watch Log"
 
-  if [ ! -f ".gazer.log" ]; then
-    touch ".gazer.log"
+  if [ ! -f "$log_file" ]; then
+    touch "$log_file"
   fi
 else
   echo "1) Start"
+  started=false
 fi
 
 cmd=""
-
 while true; do
   if [[ "$started" = true ]]; then
     read -rp "Enter command number (1, 2 or 3): " input
@@ -61,16 +98,16 @@ while true; do
 done
 
 if [ "$cmd" == "3" ]; then
-  watch -n 0.1 cat .gazer.log
+  watch -n 0.1 cat "$log_file"
   exit 0
 fi
 
-if [ -f ".gazer.pid" ]; then
-  OLD_PID=$(cat .gazer.pid)
+if [ -f "$pid_file" ]; then
+  OLD_PID=$(cat "$pid_file")
   if ps -p "$OLD_PID" >/dev/null 2>&1; then
     if [ "$cmd" == "2" ]; then
       pkill -P "$OLD_PID"
-      rm .gazer.pid .gazer.log .gazer.bid || true
+      rm "$pid_file" "$log_file" "$bid_file" || true
       echo "Success"
       exit 0
     else
@@ -80,17 +117,15 @@ if [ -f ".gazer.pid" ]; then
 fi
 
 if [ "$cmd" == "2" ]; then
-  rm .gazer.pid .gazer.log .gazer.bid || true
+  rm "$pid_file" "$log_file" "$bid_file" || true
   echo "Success"
   exit 1
 fi
 
-chmod +x run.gazer
-
-nohup ./run.gazer >.gazer.log 2>&1 &
+chmod +x "$selected_config"
+nohup ./"$selected_config" >"$log_file" 2>&1 &
 NEW_PID=$!
-echo $NEW_PID >.gazer.pid
-
+echo $NEW_PID >"$pid_file"
 echo "Success"
 
-head /dev/urandom | tr -dc A-Z0-9 | head -c 5 | sed 's/./& /g' >.gazer.bid
+head /dev/urandom | tr -dc A-Z0-9 | head -c 5 | sed 's/./& /g' >"$bid_file"
