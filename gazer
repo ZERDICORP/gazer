@@ -106,12 +106,12 @@ if [ -f "$pid_file" ]; then
   OLD_PID=$(cat "$pid_file")
   if ps -p "$OLD_PID" >/dev/null 2>&1; then
     if [ "$cmd" == "2" ]; then
-      pkill -P "$OLD_PID"
+      kill -9 -$(ps -o pgid= $OLD_PID | grep -o '[0-9]*')
       rm "$pid_file" "$log_file" "$bid_file" || true
       echo "Success"
       exit 0
     else
-      pkill -P "$OLD_PID"
+      kill -9 -$(ps -o pgid= $OLD_PID | grep -o '[0-9]*')
     fi
   fi
 fi
