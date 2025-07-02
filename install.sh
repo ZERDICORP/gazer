@@ -16,11 +16,18 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/master/gazer"
+GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/master/gazer.py"
 DEST_PATH="/usr/local/bin/gazer"
 
+echo "Downloading gazer..."
 wget "$GITHUB_URL" -O "$DEST_PATH" -q
+if [[ $? -ne 0 ]]; then
+  echo "Download failed!"
+  exit 1
+fi
+
 chmod +x "$DEST_PATH"
 
 echo "Success!"
-echo "Executable can be found in '$DEST_PATH'"
+echo "Executable can be found at '$DEST_PATH'"
+echo "You can now run 'gazer' from the command line."
