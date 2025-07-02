@@ -68,6 +68,11 @@ def kill_process_group(pid: int):
 
 
 def start_config(selected_config: str, log_file: str, pid_file: str, bid_file: str):
+    pid = int(read_file(pid_file))
+    if is_active(pid):
+        print(f"Process with pid ${pid} already running")
+        sys.exit(1)
+
     if not os.access(selected_config, os.X_OK):
         os.chmod(selected_config, 0o755)
 
@@ -86,8 +91,11 @@ def start_config(selected_config: str, log_file: str, pid_file: str, bid_file: s
 
 def stop_config(pid_file: str, log_file: str, bid_file: str):
     pid = int(read_file(pid_file))
-    if is_active(pid):
-        kill_process_group(pid)
+    if not is_active(pid):
+        print(f"Process with pid ${pid} not running")
+        sys.exit(1)
+
+    kill_process_group(pid)
     for f in [pid_file, log_file, bid_file]:
         os.remove(f)
     print("Success")
