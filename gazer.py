@@ -192,7 +192,7 @@ def interactive(runners: list[str]):
 
     log, pid, bid = log_pid_bid(runner)
 
-    running = pid.running
+    running = pid.running()
 
     if running:
         show_tui(f"                                      > {bid} <")
