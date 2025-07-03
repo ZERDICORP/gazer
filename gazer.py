@@ -62,31 +62,32 @@ def find_runners():
 class Pid(object):
     def __init__(self, runner: str):
         self.__file = f"{GZR_DIR}/.{runner}.pid"
-        self.__read_pid()
 
     def __str__(self):
         return str(self.__pid)
 
-    def __read_pid(self):
+    def __refresh(self):
         try:
             self.__pid = int(read_file(self.__file))
-        except TypeError:
+        except Exception:
             self.__pid = None
 
     def remove(self):
         os.remove(self.__file)
 
+    def update(self, process: subprocess.Popen):
+        write_file(self.__file, str(process.pid))
+
     def kill(self):
+        self.__refresh()
         try:
             pgid = os.getpgid(self.__pid)
             os.killpg(pgid, signal.SIGKILL)
         except Exception as e:
             show_status(f"No process with pid ${self.__pid}")
 
-    def update(self, process: subprocess.Popen):
-        write_file(self.__file, str(process.pid))
-
     def running(self) -> bool:
+        self.__refresh()
         try:
             os.kill(self.__pid, 0)
         except Exception:
@@ -154,7 +155,7 @@ def start_runner(runner: str, log: Log, pid: Pid, bid: Bid):
 
 
 def stop_runner(pid: Pid, log: Log, bid: Bid):
-    if pid.running():
+    if not pid.running():
         show_status(f"Process with pid ${pid} not running")
         sys.exit(1)
 
