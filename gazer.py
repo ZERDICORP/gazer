@@ -10,6 +10,7 @@ import signal
 import string
 import subprocess
 import sys
+from pathlib import Path
 
 ASCII_ART = r"""
  _____                      __  __
@@ -109,7 +110,7 @@ class Log(object):
 
 
 def find_configs():
-    return sorted(f for f in os.listdir(".") if f.endswith(".gzr"))
+    return sorted(f for f in os.listdir(".") if f.endswith(".gzr") and Path.is_file(f))
 
 
 def log_pid_bid(runner: str) -> (Log, Pid, Bid):
