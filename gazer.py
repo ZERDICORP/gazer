@@ -10,7 +10,6 @@ import signal
 import string
 import subprocess
 import sys
-from pathlib import Path
 
 ASCII_ART = r"""
  _____                      __  __
@@ -109,8 +108,11 @@ class Log(object):
         os.remove(self.__file)
 
 
-def find_configs():
-    return sorted(f for f in os.listdir(".") if f.endswith(".gzr") and Path.is_file(f))
+def find_runners():
+    return sorted(
+        f for f in os.listdir(".")
+        if f.endswith(".gzr") and os.path.isfile(f)
+    )
 
 
 def log_pid_bid(runner: str) -> (Log, Pid, Bid):
@@ -120,7 +122,7 @@ def log_pid_bid(runner: str) -> (Log, Pid, Bid):
     return log, pid, bid
 
 
-def start_config(runner: str, log: Log, pid: Pid, bid: Bid):
+def start_runner(runner: str, log: Log, pid: Pid, bid: Bid):
     if pid.running():
         show_status(f"Process with pid ${pid} already running")
         sys.exit(1)
@@ -142,7 +144,7 @@ def start_config(runner: str, log: Log, pid: Pid, bid: Bid):
     show_status("Success")
 
 
-def stop_config(pid: Pid, log: Log, bid: Bid):
+def stop_runner(pid: Pid, log: Log, bid: Bid):
     if pid.running():
         show_status(f"Process with pid ${pid} not running")
         sys.exit(1)
@@ -155,9 +157,9 @@ def stop_config(pid: Pid, log: Log, bid: Bid):
     show_status("Success")
 
 
-def restart_config(selected_config, log_file, pid_file, bid_file):
-    stop_config(pid_file, log_file, bid_file)
-    start_config(selected_config, log_file, pid_file, bid_file)
+def restart_runner(runner: str, log: Log, pid: Pid, bid: Bid):
+    stop_runner(pid, log, bid)
+    start_runner(runner, log, pid, bid)
 
 
 def interactive(runners: list[str]):
@@ -205,11 +207,11 @@ def interactive(runners: list[str]):
 
     if running:
         if cmd_num == 1:
-            restart_config(runner, log, pid, bid)
+            restart_runner(runner, log, pid, bid)
         elif cmd_num == 2:
-            stop_config(pid, log, bid)
+            stop_runner(pid, log, bid)
     else:
-        start_config(runner, log, pid, bid)
+        start_runner(runner, log, pid, bid)
 
     show_status("Success")
 
@@ -251,17 +253,17 @@ def inline_mode(args: list[str], runners: list[str]):
     log, pid, bid = log_pid_bid(runner)
 
     if action == "start":
-        start_config(runner, log, pid, bid)
+        start_runner(runner, log, pid, bid)
     elif action == "stop":
-        stop_config(pid, log, bid)
+        stop_runner(pid, log, bid)
     elif action == "restart":
-        restart_config(runner, log, pid, bid)
+        restart_runner(runner, log, pid, bid)
 
 
 def main(args: list[str]):
     show_ascii_art()
 
-    runners = find_configs()
+    runners = find_runners()
     if not runners:
         show_status("No '*.gzr' runner files found!")
         sys.exit(1)
