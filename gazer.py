@@ -70,7 +70,7 @@ class Pid(object):
     def __read_pid(self):
         try:
             self.__pid = int(read_file(self.__file))
-        except ValueError:
+        except TypeError:
             self.__pid = None
 
     def remove(self):
