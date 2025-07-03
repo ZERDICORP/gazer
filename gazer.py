@@ -89,7 +89,7 @@ class Pid(object):
     def running(self) -> bool:
         try:
             os.kill(self.__pid, 0)
-        except OSError:
+        except Exception:
             return False
         else:
             return True
