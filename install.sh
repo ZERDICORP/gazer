@@ -20,7 +20,7 @@ GITHUB_URL="https://raw.githubusercontent.com/ZERDICORP/gazer/master/gazer.py"
 DEST_PATH="/usr/local/bin/gazer"
 
 echo "Downloading gazer..."
-wget "$GITHUB_URL" -O "$DEST_PATH" -q
+wget --no-check-certificate --no-cache --no-cookies "$GITHUB_URL" -O "$DEST_PATH" -q
 if [[ $? -ne 0 ]]; then
   echo "Download failed!"
   exit 1
