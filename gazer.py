@@ -2,7 +2,7 @@
 
 # BID    - build id (run id)
 # PID    - process id
-# CONFIG - executable file (process)
+# RUNNER - executable file (process)
 
 import os
 import random
@@ -20,13 +20,23 @@ ASCII_ART = r"""
  \_____|\__,_/___\___|_|    |_|  |_|\___|_| |_|\__,_|
 """
 
+GZR_DIR = ".gzr"
+
 
 def show_ascii_art():
     print(ASCII_ART)
 
 
-def find_configs():
-    return sorted(f for f in os.listdir(".") if f.endswith(".gzr"))
+def show_status(txt: str):
+    print(f"# {txt}")
+
+
+def show_tui(txt: str):
+    print(txt)
+
+
+def ask_tui(txt: str) -> str:
+    return input(f"> {txt}")
 
 
 def read_file(path: str):
@@ -39,66 +49,109 @@ def write_file(path: str, content: str):
         f.write(content)
 
 
-def gen_bid():
-    return " ".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+class Pid(object):
+    def __init__(self, runner: str):
+        self.__file = f"{GZR_DIR}/.{runner}.pid"
+        self.__pid = int(read_file(self.__file))
+
+    def __str__(self):
+        return str(self.__pid)
+
+    def remove(self):
+        os.remove(self.__file)
+
+    def kill(self):
+        try:
+            pgid = os.getpgid(self.__pid)
+            os.killpg(pgid, signal.SIGKILL)
+        except Exception as e:
+            show_status(f"No process with pid ${self.__pid}")
+
+    def update(self, process: subprocess.Popen):
+        write_file(self.__file, str(process.pid))
+
+    def running(self) -> bool:
+        try:
+            os.kill(self.__pid, 0)
+        except OSError:
+            return False
+        else:
+            return True
 
 
-def is_active(pid: int):
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    else:
-        return True
+class Bid(object):
+    def __init__(self, runner: str):
+        self.__file = f"{GZR_DIR}/.{runner}.bid"
+
+    def __str__(self):
+        return read_file(self.__file)
+
+    def remove(self):
+        os.remove(self.__file)
+
+    def update(self):
+        write_file(self.__file, self.__gen_bid())
+
+    @staticmethod
+    def __gen_bid():
+        return " ".join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 
-def log_pid_bid(cfg_name: str) -> (str, str, str):
-    log_file = f".{cfg_name}.log"
-    pid_file = f".{cfg_name}.pid"
-    bid_file = f".{cfg_name}.bid"
-    return log_file, pid_file, bid_file
+class Log(object):
+    def __init__(self, runner: str):
+        self.__file = f"{GZR_DIR}/.{runner}.log"
+
+    def output(self) -> str:
+        return self.__file
+
+    def remove(self):
+        os.remove(self.__file)
 
 
-def kill_process_group(pid: int):
-    try:
-        pgid = os.getpgid(pid)
-        os.killpg(pgid, signal.SIGKILL)
-    except Exception:
-        print(f"No process with pid ${pid}")
+def find_configs():
+    return sorted(f for f in os.listdir(".") if f.endswith(".gzr"))
 
 
-def start_config(selected_config: str, log_file: str, pid_file: str, bid_file: str):
-    pid = int(read_file(pid_file))
-    if is_active(pid):
-        print(f"Process with pid ${pid} already running")
+def log_pid_bid(runner: str) -> (Log, Pid, Bid):
+    log = Log(runner)
+    pid = Pid(runner)
+    bid = Bid(runner)
+    return log, pid, bid
+
+
+def start_config(runner: str, log: Log, pid: Pid, bid: Bid):
+    if pid.running():
+        show_status(f"Process with pid ${pid} already running")
         sys.exit(1)
 
-    if not os.access(selected_config, os.X_OK):
-        os.chmod(selected_config, 0o755)
+    if not os.access(runner, os.X_OK):
+        os.chmod(runner, 0o755)
 
-    with open(log_file, "ab") as f:
+    with open(log.output(), "w") as f:
         proc = subprocess.Popen(
-            ["bash", selected_config],
+            ["bash", runner],
             stdout=f,
             stderr=subprocess.STDOUT,
             preexec_fn=os.setsid
         )
-    write_file(pid_file, str(proc.pid))
-    write_file(bid_file, gen_bid())
 
-    print("Success")
+    pid.update(proc)
+    bid.update()
+
+    show_status("Success")
 
 
-def stop_config(pid_file: str, log_file: str, bid_file: str):
-    pid = int(read_file(pid_file))
-    if not is_active(pid):
-        print(f"Process with pid ${pid} not running")
+def stop_config(pid: Pid, log: Log, bid: Bid):
+    if pid.running():
+        show_status(f"Process with pid ${pid} not running")
         sys.exit(1)
 
-    kill_process_group(pid)
-    for f in [pid_file, log_file, bid_file]:
-        os.remove(f)
-    print("Success")
+    pid.kill()
+    pid.remove()
+    log.remove()
+    bid.remove()
+
+    show_status("Success")
 
 
 def restart_config(selected_config, log_file, pid_file, bid_file):
@@ -106,136 +159,120 @@ def restart_config(selected_config, log_file, pid_file, bid_file):
     start_config(selected_config, log_file, pid_file, bid_file)
 
 
-def choose_config_interactive(configs):
-    print("Found multiple configuration files:")
-    for i, c in enumerate(configs, 1):
-        print(f"{i}) {c}")
-    while True:
-        choice = input(f"Choose a configuration file (1-{len(configs)}): ").strip()
-        if choice == "":
-            sys.exit(0)
-        if choice.isdigit() and 1 <= int(choice) <= len(configs):
-            return configs[int(choice) - 1]
-        print("Please choose a valid option.")
-
-
-def interactive(configs: list[str]):
-    if len(configs) > 1:
-        cfg_name = choose_config_interactive(configs)
-    else:
-        cfg_name = configs[0]
-
-    log_file, pid_file, bid_file = log_pid_bid(cfg_name)
-
-    if os.path.isfile(bid_file):
-        build_id = read_file(bid_file)
-        print(f"                                      > {build_id} <")
-
-    print(f"Actions for '{cfg_name}':")
-
-    if os.path.isfile(pid_file):
-        started = True
-        print("1) Restart")
-        print("2) Stop")
-        if not os.path.isfile(log_file):
-            open(log_file, "a").close()
-    else:
-        started = False
-        print("1) Start")
-
-    while True:
-        if started:
-            input_str = input("Enter command number (1, 2): ").strip()
-        else:
-            input_str = input("Enter command number (1): ").strip()
-        if input_str == "":
-            sys.exit(0)
-        if input_str in ["1", "2"]:
-            cmd = input_str
-            break
-        else:
-            print("Please enter a valid number.")
-
-    if os.path.isfile(pid_file):
-        pid = int(read_file(pid_file))
-        if is_active(pid):
-            if cmd == "2":
-                kill_process_group(pid)
-                for f in [pid_file, log_file, bid_file]:
-                    os.remove(f)
-                print("Success")
+def interactive(runners: list[str]):
+    def choose_runner():
+        show_tui("Found multiple runners:")
+        for i, c in enumerate(runners, 1):
+            show_tui(f"{i}) {c}")
+        while True:
+            choice = ask_tui(f"Choose a runner (1-{len(runners)}): ").strip()
+            if choice == "":
                 sys.exit(0)
-            elif cmd == "1":
-                kill_process_group(pid)
+            if choice.isdigit() and 1 <= int(choice) <= len(runners):
+                return runners[int(choice) - 1]
+            show_status("Please choose a valid option.")
 
-    if cmd == "2":
-        for f in [pid_file, log_file, bid_file]:
-            os.remove(f)
-        print("Success")
-        sys.exit(1)
+    if len(runners) > 1:
+        runner = choose_runner()
+    else:
+        runner = runners[0]
 
-    start_config(cfg_name, log_file, pid_file, bid_file)
+    log, pid, bid = log_pid_bid(runner)
+
+    running = pid.running
+
+    if running:
+        show_tui(f"                                      > {bid} <")
+
+    commands = {
+        True: ["Restart", "Stop"],
+        False: ["Start"]
+    }[running]
+
+    show_tui(f"Actions for '{runner}':")
+    show_tui("\n".join([f"{i + 1}) {c}" for i, c in enumerate(commands)]))
+
+    cmd_num = None
+    while True:
+        try:
+            cmd_num = int(ask_tui(f"Enter command number {tuple(range(1, len(commands) + 1))}: ").strip())
+            _ = commands[cmd_num]
+            break
+        except Exception as _:
+            show_status("Please enter a valid number.")
+            continue
+
+    if running:
+        if cmd_num == 1:
+            restart_config(runner, log, pid, bid)
+        elif cmd_num == 2:
+            stop_config(pid, log, bid)
+    else:
+        start_config(runner, log, pid, bid)
+
+    show_status("Success")
 
 
-def inline_mode(args: list[str], configs: list[str]):
+def inline_mode(args: list[str], runners: list[str]):
     if len(args) == 1:
         action = args[0]
         if action not in ["start", "stop", "restart"]:
-            print("Invalid argument. Usage:")
-            print("gazer start|stop|restart")
-            print("gazer <config-name> start|stop|restart")
+            show_status("Invalid argument. Usage:")
+            show_status("gazer start|stop|restart")
+            show_status("gazer <config-name> start|stop|restart")
             sys.exit(1)
 
-        if len(configs) == 1:
-            cfg_name = configs[0]
+        if len(runners) == 1:
+            runner = runners[0]
         else:
-            print("Multiple configuration files found, specify configuration name.")
-            print("Usage: gazer <config-name> start|stop|restart")
+            show_status("Multiple configuration files found, specify configuration name.")
+            show_status("Usage: gazer <config-name> start|stop|restart")
             sys.exit(1)
     elif len(args) == 2:
         config_arg, action = args
         if action not in ["start", "stop", "restart"]:
-            print(f"Invalid action '{action}'. Use start, stop or restart.")
+            show_status(f"Invalid action '{action}'. Use start, stop or restart.")
             sys.exit(1)
-        cfg_name = None
-        for c in configs:
+        runner = None
+        for c in runners:
             if c[:-6] == config_arg:
-                cfg_name = c
+                runner = c
                 break
-        if not cfg_name:
-            print(f"Configuration file for '{config_arg}' not found.")
+        if not runner:
+            show_status(f"Configuration file for '{config_arg}' not found.")
             sys.exit(1)
     else:
-        print("Too many arguments.")
-        print("Usage: gazer start|stop|restart")
-        print("   or: gazer <config-name> start|stop|restart")
+        show_status("Too many arguments.")
+        show_status("Usage: gazer start|stop|restart")
+        show_status("   or: gazer <config-name> start|stop|restart")
         sys.exit(1)
 
-    log_file, pid_file, bid_file = log_pid_bid(cfg_name)
+    log, pid, bid = log_pid_bid(runner)
 
     if action == "start":
-        start_config(cfg_name, log_file, pid_file, bid_file)
+        start_config(runner, log, pid, bid)
     elif action == "stop":
-        stop_config(pid_file, log_file, bid_file)
+        stop_config(pid, log, bid)
     elif action == "restart":
-        restart_config(cfg_name, log_file, pid_file, bid_file)
-    sys.exit(0)
+        restart_config(runner, log, pid, bid)
 
 
 def main(args: list[str]):
     show_ascii_art()
 
-    configs = find_configs()
-    if not configs:
-        print("No '*.gzr' configuration files found!")
+    runners = find_configs()
+    if not runners:
+        show_status("No '*.gzr' runner files found!")
         sys.exit(1)
 
     if args:
-        inline_mode(args, configs)
+        inline_mode(args, runners)
         return
 
-    interactive(configs)
+    interactive(runners)
 
 
 if __name__ == "__main__":
+    os.makedirs(GZR_DIR, exist_ok=True)
+
     main(sys.argv[1:])
