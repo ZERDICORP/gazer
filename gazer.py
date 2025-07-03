@@ -40,13 +40,23 @@ def ask_tui(txt: str) -> str:
 
 
 def read_file(path: str):
-    with open(path, "r") as f:
-        return f.read().strip()
+    try:
+        with open(path, "r") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return None
 
 
 def write_file(path: str, content: str):
     with open(path, "w") as f:
         f.write(content)
+
+
+def find_runners():
+    return sorted(
+        f for f in os.listdir(".")
+        if f.endswith(".gzr") and os.path.isfile(f)
+    )
 
 
 class Pid(object):
@@ -106,13 +116,6 @@ class Log(object):
 
     def remove(self):
         os.remove(self.__file)
-
-
-def find_runners():
-    return sorted(
-        f for f in os.listdir(".")
-        if f.endswith(".gzr") and os.path.isfile(f)
-    )
 
 
 def log_pid_bid(runner: str) -> (Log, Pid, Bid):
