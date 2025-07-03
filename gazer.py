@@ -12,8 +12,8 @@ import subprocess
 import sys
 
 ASCII_ART = r"""
- _____                      __  __
-/ ____|                    |  \/  |
+ _____                       __  __
+/ ____|                     |  \/  |
 | |  __  __ _ _______ _ __  | \  / | ___ _ __  _   _
 | | |_ |/ _` |_  / _ \ '__| | |\/| |/ _ \ '_ \| | | |
 | |__| | (_| |/ /  __/ |    | |  | |  __/ | | | |_| |
@@ -208,7 +208,10 @@ def interactive(runners: list[str]):
     cmd_num = None
     while True:
         try:
-            cmd_num = int(ask_tui(f"Enter command number {tuple(range(1, len(commands) + 1))}: ").strip())
+            cmd_text = ask_tui(f"Enter command number {tuple(range(1, len(commands) + 1))}: ").strip()
+            if cmd_text == "":
+                sys.exit(0)
+            cmd_num = int(cmd_text)
             _ = commands[cmd_num]
             break
         except Exception as _:
