@@ -62,10 +62,16 @@ def find_runners():
 class Pid(object):
     def __init__(self, runner: str):
         self.__file = f"{GZR_DIR}/.{runner}.pid"
-        self.__pid = int(read_file(self.__file))
+        self.__read_pid()
 
     def __str__(self):
         return str(self.__pid)
+
+    def __read_pid(self):
+        try:
+            self.__pid = int(read_file(self.__file))
+        except ValueError:
+            self.__pid = None
 
     def remove(self):
         os.remove(self.__file)
