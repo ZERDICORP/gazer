@@ -251,7 +251,7 @@ def inline_mode(args: list[str], runners: list[str]):
             sys.exit(1)
         runner = None
         for c in runners:
-            if c[:-6] == config_arg:
+            if c[:-4] == config_arg:
                 runner = c
                 break
         if not runner:
